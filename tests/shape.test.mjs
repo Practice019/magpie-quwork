@@ -22,6 +22,17 @@ test("auth.methods 是**数组**（不是对象、不是函数）", () => {
   assert.equal(p.auth.methods.length, 5)
 })
 
+test("Linux 下自动抓取明确失败，短信/粘贴/导入仍保留", async () => {
+  const linux = await QuWorkAuthPlugin({}, { platform: "linux" })
+  const browser = linux.auth.methods.find((m) => /客户端|浏览器/.test(String(m.label)))
+  const failed = await browser.authorize({})
+  assert.equal(failed.type, "failed")
+  assert.match(failed.error, /只支持 Windows/)
+  const labels = linux.auth.methods.map((m) => String(m.label))
+  assert.ok(labels.some((l) => l.includes("手机号")))
+  assert.ok(labels.filter((l) => l.startsWith("粘贴")).length >= 2)
+})
+
 test("每项都有 type / label；prompts（若有）结构合法", () => {
   for (const m of p.auth.methods) {
     assert.equal(typeof m.type, "string")

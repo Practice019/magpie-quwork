@@ -162,6 +162,9 @@ function makeMethods(opts = {}) {
   const sleep = typeof opts.sleep === "function" ? opts.sleep : undefined
   /** @type {(() => number) | undefined} */
   const now = typeof opts.now === "function" ? opts.now : undefined
+  // 自动抓取依赖 Windows 客户端写入的 sqlite / credentials 文件；Linux/macOS
+  // 下这个方式永远轮询不到凭据，明确提示改用短信/粘贴/文件导入。
+  const platform = String(opts.platform ?? process.platform)
 
   /** 一次发码会话里暂存的信息（按 phone 索引；进程内有效）。 */
   const pending = new Map()
@@ -308,6 +311,12 @@ function makeMethods(opts = {}) {
      * ⚠ 立刻返回（沉默等待在 `callback`）；打开失败只 warn，仍把 url 交给 magpie。
      */
     async authorize() {
+      if (platform !== "win32") {
+        return {
+          type: "failed",
+          error: "「浏览器/客户端自动抓取」只支持 Windows（依赖本机客户端写入凭据）。Linux 请用「手机号 + 短信验证码」「粘贴 llm_token」或「从文件导入」。",
+        }
+      }
       try {
         await openExternal(loginUrl)
       } catch {
@@ -333,6 +342,9 @@ function makeMethods(opts = {}) {
    * 交给 `isNewCredential()` 做四判据。
    */
   async function browserCallback(_input, { signal } = {}) {
+    if (platform !== "win32") {
+      return { type: "failed", error: "自动抓取只支持 Windows；Linux 请用短信验证码或粘贴 llm_token。" }
+    }
     /** @type {any} */
     let baseline = {}
     try {
@@ -636,6 +648,7 @@ export const QuWorkAuthPlugin = async (input = {}, options = {}) => {
       ...(ICON ? { icon: ICON } : {}),
       methods: makeMethods({
         platformBaseUrl,
+        platform: options?.platform,
         configDir,
         log,
         // `client` 只给「从文件导入（粘贴）」用：一次粘多条时，第 2..N 条要走

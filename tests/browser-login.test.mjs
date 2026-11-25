@@ -37,7 +37,7 @@ function tempDir(t) {
 
 /** 取出「打开客户端登录」那一项。 */
 async function loginMethod(opts = {}) {
-  const p = await QuWorkAuthPlugin({}, { log: { warn() {} }, ...opts })
+  const p = await QuWorkAuthPlugin({}, { log: { warn() {} }, platform: "win32", ...opts })
   return p.auth.methods.find((m) => /客户端|浏览器/.test(String(m.label)))
 }
 
@@ -101,6 +101,7 @@ test("3) 打开失败只 warn（有 log 对象时）", async () => {
     {},
     {
       log: { warn: (m) => warns.push(String(m)) },
+      platform: "win32",
       openExternal: async () => {},
     },
   )

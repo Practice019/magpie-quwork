@@ -1,6 +1,6 @@
 {
   "name": "magpie-quwork",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "QuWork（qurvis）provider plugin for magpie：手机号/浏览器登录、模型代理、积分卡片、邀请码与权益面板",
   "type": "module",
   "main": "./index.mjs",

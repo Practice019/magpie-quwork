@@ -32,7 +32,7 @@ const EXPIRE_SEC = 1_800_000_000
 function pluginWith(opts = {}) {
   // ⚠ 必须把全部 opts 透传：否则 exists/openExternal 注入不进去，
   //    测试会真的去启动本机的 QuWork 客户端。
-  return QuWorkAuthPlugin({}, { log: { warn() {} }, ...opts })
+  return QuWorkAuthPlugin({}, { log: { warn() {} }, platform: "win32", ...opts })
 }
 
 /** 找出「手机号 + 短信」那一项。 */

@@ -253,6 +253,14 @@ async function loadCatalogOnce(opts) {
  *   （只在测试/嵌入场景出现；生产环境 magpie 一定给 `input.directory`）。
  * @returns {(provider: any, ctx?: {auth?: any}) => Promise<Record<string, object>>}
  */
+/**
+ * fellBackOf 给"不是账号自己的列表"打上宿主认的标记（CONTRACT 6-02）。
+ * 宿主读 Symbol.for("magpie.fellBack")，带标记的列表**不参与路由**。
+ */
+function fellBackOf(models) {
+  return Object.assign({ ...(models ?? {}) }, { [Symbol.for("magpie.fellBack")]: true })
+}
+
 export function makeModelsHook(opts = {}) {
   const log = opts.log ?? console
   const configDir = cacheDirOf(opts.configDir)
@@ -262,8 +270,9 @@ export function makeModelsHook(opts = {}) {
     const auth = ctx?.auth
     const llmToken = String(auth?.llmToken ?? auth?.access ?? "").trim()
 
-    // 未登录：给静态表（否则界面上这个供应商一个模型都没有）
-    if (!llmToken) return toMagpieModels(provider, DEFAULT_MODELS)
+    // 未登录：给静态表（否则界面上这个供应商一个模型都没有）。
+    // 静态表不是账号自己的计划 ⇒ 必须标 fellBack，否则宿主会按它派活（CONTRACT 6-02）。
+    if (!llmToken) return fellBackOf(toMagpieModels(provider, DEFAULT_MODELS))
 
     // ① 命中缓存 → 零上游（magpie 重启后就是这条路）
     const cached = configDir ? readCacheEntry(configDir, MODELS_CACHE_FILE, base) : null
@@ -274,12 +283,12 @@ export function makeModelsHook(opts = {}) {
     try {
       // ② 未命中 → 整个 provider 只拉一次 → 写缓存
       const live = await loadCatalogOnce({ configDir, base, llmToken, fetchImpl: opts.fetchImpl, log })
-      if (!live || live.length === 0) return toMagpieModels(provider, DEFAULT_MODELS)
+      if (!live || live.length === 0) return fellBackOf(toMagpieModels(provider, DEFAULT_MODELS))
       return toMagpieModels(provider, live)
     } catch (e) {
       // 不抛：抛了宿主只会保留旧列表，日志里反而没线索
       log?.warn?.(`quwork: 拉取实时模型目录失败，回退静态表: ${String(e?.message ?? e).slice(0, 160)}`)
-      return toMagpieModels(provider, DEFAULT_MODELS)
+      return fellBackOf(toMagpieModels(provider, DEFAULT_MODELS))
     }
   }
 }

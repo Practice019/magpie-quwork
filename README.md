@@ -8,6 +8,19 @@
 
 ---
 
+
+## 安装
+
+```bash
+# 本地开发
+magpie plugin add /path/to/magpie-quwork
+
+# 或从 GitHub
+magpie plugin add Practice019/magpie-quwork
+```
+
+装完在插件 → 已安装里能看到两张卡：`quwork`（供应商）与 `QuWork 面板`（管理面板）。
+
 ## 1. 它做什么
 
 | 钩子 | 行为 |
